@@ -1,0 +1,15 @@
+{
+  "best_value": 0.9050806562105814,
+  "best_params": {
+    "iseed": 8,
+    "preproc": "raw",
+    "nhid1": 400,
+    "squash": "tanh",
+    "dist1": "normal",
+    "scale_heur1": "Glorot",
+    "lr": 0.09448220156235795,
+    "lr_anneal_start": 6532,
+    "batch_size": 100,
+    "l2_penalty_choice": "zero"
+  }
+}

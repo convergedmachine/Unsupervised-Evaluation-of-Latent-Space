@@ -1,0 +1,16 @@
+{
+  "best_value": 0.9746773838996887,
+  "best_params": {
+    "iseed": 7,
+    "preproc": "pca",
+    "pca_energy": 0.8138870347525912,
+    "nhid1": 928,
+    "squash": "logistic",
+    "dist1": "normal",
+    "scale_heur1": "Glorot",
+    "lr": 0.23690860415825493,
+    "lr_anneal_start": 7281,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  }
+}

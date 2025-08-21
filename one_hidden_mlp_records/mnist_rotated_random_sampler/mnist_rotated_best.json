@@ -1,0 +1,16 @@
+{
+  "best_value": 0.8915322621663412,
+  "best_params": {
+    "iseed": 8,
+    "preproc": "colnorm",
+    "colnorm_thresh": 1.0126330266010736e-07,
+    "nhid1": 800,
+    "squash": "logistic",
+    "dist1": "normal",
+    "scale_heur1": "Glorot",
+    "lr": 0.09050947085655917,
+    "lr_anneal_start": 6528,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  }
+}
