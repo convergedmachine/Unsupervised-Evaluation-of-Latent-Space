@@ -169,7 +169,7 @@ def _build_encoder(df: pd.DataFrame, hp_cols: List[str]) -> Tuple[ColumnTransfor
 
     transformers = []
     if cat_cols:
-        transformers.append(("cat", OneHotEncoder(handle_unknown='ignore', sparse=False), cat_cols))
+        transformers.append(("cat", OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_cols))
     if num_cols:
         transformers.append(("num", StandardScaler(), num_cols))
 
@@ -254,7 +254,7 @@ def _compute_ard_relevance_distributions(df: pd.DataFrame, hp_cols: List[str], n
         Xb_t = ct.transform(Xb)
 
         # ARDRegression on transformed features
-        ard = ARDRegression(n_iter=300, tol=1e-3, fit_intercept=True, compute_score=False)
+        ard = ARDRegression(max_iter=300, tol=1e-3, fit_intercept=True, compute_score=False)
         try:
             ard.fit(Xb_t, yb)
         except Exception:
@@ -396,3 +396,135 @@ def plot_ard_panels(
     panel_path = os.path.join("ard_2x4_panels.png")
     fig.savefig(panel_path, dpi=200)
     plt.close(fig)
+
+# ------------- helpers -------------
+def _ensure_xy(df: pd.DataFrame,
+               acc_col: str = "accuracy",
+               param_col: str = "param") -> Tuple[np.ndarray, np.ndarray]:
+    """Return (x=param, y=accuracy) from a DF with flexible column names."""
+    cols_lower = [c.lower() for c in df.columns]
+
+    # Direct hit
+    if acc_col in df.columns and param_col in df.columns:
+        acc = df[acc_col].astype(float).to_numpy()
+        par = df[param_col].astype(float).to_numpy()
+        mask = np.isfinite(acc) & np.isfinite(par)
+        return par[mask], acc[mask]
+
+    # Heuristics
+    acc_candidates = [c for c in df.columns if "acc" in c.lower()]
+    par_candidates  = [c for c in df.columns if "param" in c.lower() or "lambda" in c.lower() or "alpha" in c.lower()]
+    if acc_candidates and par_candidates:
+        acc = df[acc_candidates[0]].astype(float).to_numpy()
+        par = df[par_candidates[0]].astype(float).to_numpy()
+        mask = np.isfinite(acc) & np.isfinite(par)
+        return par[mask], acc[mask]
+
+    # Fallback: first two numeric columns
+    numeric = df.select_dtypes(include=[np.number])
+    if numeric.shape[1] >= 2:
+        par = numeric.iloc[:, 1].to_numpy()
+        acc = numeric.iloc[:, 0].to_numpy()
+        mask = np.isfinite(acc) & np.isfinite(par)
+        return par[mask], acc[mask]
+
+    raise ValueError("Could not infer 'accuracy' and 'param' columns from the DataFrame.")
+
+def _pearson_spearman(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+    if len(x) < 2:
+        return (np.nan, np.nan)
+    r = float(np.corrcoef(x, y)[0, 1])
+    rho = pd.Series(y).rank().corr(pd.Series(x).rank(), method="pearson")
+    return r, float(rho)
+
+# ------------- main plotter -------------
+def plot_accuracy_vs_param_panels(
+    parzen_dict: Dict[str, pd.DataFrame],
+    grid_dict: Dict[str, pd.DataFrame],
+    random_dict: Dict[str, pd.DataFrame],
+    datasets: Optional[List[str]] = None,
+    acc_col: str = "accuracy",
+    param_col: str = "param",
+    add_fit_lines: bool = True,
+    figsize: Tuple[int, int] = (18, 9),
+    save_path: Optional[str] = None,
+    plot_mode: str = "scatter",  # "scatter" or "bland_altman"
+):
+    """
+    Create 8 Accuracy-vs-Parameter panels or Bland–Altman plots.
+
+    plot_mode = "scatter": overlay Parzen/Grid/Random with correlations.
+    plot_mode = "bland_altman": show Bland–Altman agreement plots.
+    """
+    if datasets is None:
+        datasets = DATASETS
+
+    fig, axes = plt.subplots(2, 4, figsize=figsize, sharey=False)
+    axes = axes.flatten()
+
+    sampler_specs = [
+        ("Parzen", parzen_dict, "o"),
+        ("Grid",   grid_dict,   "s"),
+        ("Random", random_dict, "x"),
+    ]
+
+    records = []
+
+    for ax, ds in zip(axes, datasets):
+        ax.set_title(ds.replace("_", " "))
+
+        for label, dct, marker in sampler_specs:
+            if ds not in dct or dct[ds] is None or len(dct[ds]) == 0:
+                continue
+
+            df = dct[ds]
+            try:
+                x, y = _ensure_xy(df, acc_col=acc_col, param_col=param_col)
+            except Exception:
+                continue
+
+            if len(x) == 0:
+                continue
+
+            if plot_mode == "scatter":
+                # Correlations
+                r, rho = _pearson_spearman(x, y)
+                records.append({"dataset": ds, "sampler": label,
+                                "pearson_r": r, "spearman_rho": rho, "r2": r**2})
+
+                ax.set_xlabel("Parameter") # "Max Off-diagonal")
+                ax.set_ylabel("Accuracy")
+                ax.scatter(x, y, alpha=0.8, s=22, marker=marker,
+                           label=f"{label} (r={r:.2f}, ρ={rho:.2f})")
+                if add_fit_lines and len(x) >= 2:
+                    m, b = np.polyfit(x, y, 1)
+                    ax.plot(np.sort(x), m*np.sort(x)+b, linewidth=1.6)
+
+            elif plot_mode == "bland_altman":
+                # Bland–Altman
+                A = y
+                B = x
+                mean_vals = (A + B) / 2
+                diff_vals = A - B
+                mean_diff = diff_vals.mean()
+                sd_diff = diff_vals.std(ddof=1)
+
+                ax.set_xlabel("Mean of Accuracy and Param")
+                ax.set_ylabel("Difference (Accuracy - Param)")
+                ax.scatter(mean_vals, diff_vals, alpha=0.6, marker=marker, label=label)
+                ax.axhline(mean_diff, color="gray", linestyle="--")
+                ax.axhline(mean_diff+1.96*sd_diff, color="red", linestyle="--")
+                ax.axhline(mean_diff-1.96*sd_diff, color="red", linestyle="--")
+
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=8, loc="best", framealpha=0.9)
+
+    for j in range(len(datasets), len(axes)):
+        axes[j].axis("off")
+
+    plt.tight_layout()
+    if save_path:
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+
+    corr_df = pd.DataFrame.from_records(records).sort_values(["dataset","sampler"]) if records else None
+    return fig, corr_df
