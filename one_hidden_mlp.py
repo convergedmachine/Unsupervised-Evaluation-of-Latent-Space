@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 
 import numpy as np
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -186,6 +187,14 @@ def train_eval_once(model: nn.Module,
         pred = torch.argmax(logits, dim=1)
         acc = (pred == yva_t).float().mean().item()
     return float(acc)
+
+def _phi(x: torch.Tensor) -> torch.Tensor:
+    # standard normal pdf
+    return torch.exp(-0.5 * x**2) / math.sqrt(2*math.pi)
+
+def _Phi(x: torch.Tensor) -> torch.Tensor:
+    # standard normal cdf via erf
+    return 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
 
 @torch.no_grad()
 def energy_distance_to_gaussian_from_C(
