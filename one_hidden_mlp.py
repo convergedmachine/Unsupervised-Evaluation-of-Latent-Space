@@ -187,6 +187,103 @@ def train_eval_once(model: nn.Module,
         acc = (pred == yva_t).float().mean().item()
     return float(acc)
 
+@torch.no_grad()
+def energy_distance_to_gaussian_from_C(
+    C: torch.Tensor,
+    robust: bool = True,
+    max_pairs_exact: int = 50_000_000,
+    subsample_pairs: int = 5_000_000,
+    seed: int = 1337,
+) -> float:
+    """
+    Energy distance between the empirical distribution of off-diagonal entries of C
+    (after robust standardization) and N(0,1). Lower is better; 0 = perfect match.
+
+    Args
+    ----
+    C : (d,d) tensor, coupling matrix
+    robust : if True, center by median and scale by 1.4826*MAD; else mean/std
+    max_pairs_exact : compute the U-statistic exactly if n*(n-1) <= this budget
+    subsample_pairs : if exact is too big, randomly sample this many ordered pairs
+    seed : RNG for subsampling
+
+    Returns
+    -------
+    float : energy distance score (>= 0 in population; small-sample estimates can be slightly <0)
+    """
+    C = C.detach().cpu().float()
+    if C.ndim != 2 or C.shape[0] != C.shape[1]:
+        raise ValueError("C must be square (d x d).")
+    d = C.shape[0]
+    if d < 2:
+        return float('nan')
+
+    # 1) collect off-diagonal entries (use both upper & lower; DO NOT abs())
+    mask = ~torch.eye(d, dtype=torch.bool)
+    x = C[mask]                  # shape [n], where n = d*(d-1)
+    n = x.numel()
+    if n < 8:
+        return float('nan')
+
+    # 2) robust (or classical) standardization
+    if robust:
+        med = x.median()
+        mad = (x - med).abs().median().clamp(min=1e-12)
+        scale = 1.4826 * mad
+        z = (x - med) / scale
+    else:
+        mu = x.mean()
+        sd = x.std(unbiased=False).clamp(min=1e-12)
+        z = (x - mu) / sd
+
+    # 3) Components of energy distance to N(0,1)
+    # 3a) A = 2 * E|X - G| = (2/n) * sum_i E|z_i - G|
+    #     with closed form: E|G - a| = 2*phi(a) + a*(2*Phi(a)-1)
+    EzG = 2.0 * _phi(z) + z * (2.0 * _Phi(z) - 1.0)
+    A = 2.0 * EzG.mean()
+
+    # 3b) B = E|X - X'| estimated as U-statistic
+    # exact if feasible, else subsample ordered pairs (i != j)
+    # Use float64 for stability if very large
+    z = z.to(torch.float64)
+
+    pair_budget = n * (n - 1)
+    if pair_budget <= max_pairs_exact:
+        # exact: compute mean |z_i - z_j| over i != j using trick with all-pairs L1
+        # memory-friendly chunking if needed
+        B_sum = 0.0
+        count = 0
+        # choose chunk size by memory; 8k is usually safe
+        chunk = min(n, 8192)
+        for start in range(0, n, chunk):
+            z1 = z[start:start+chunk].unsqueeze(1)        # [c,1]
+            # broadcast against all z
+            diff = (z1 - z.unsqueeze(0)).abs()            # [c,n]
+            # remove diagonal terms when start block overlaps
+            if start == 0:
+                # we'll remove diagonals after full loop to keep code simple
+                pass
+            B_sum += diff.sum().item()
+            count += diff.numel()
+        # subtract diagonal contributions (|z_i - z_i| = 0 anyway) and exclude them in count
+        count -= n  # exclude i==j
+        B = B_sum / count
+    else:
+        # subsample ordered pairs
+        g = torch.Generator(device='cpu').manual_seed(seed)
+        # number of pairs to draw cannot exceed n*(n-1)
+        m = min(subsample_pairs, pair_budget)
+        i = torch.randint(0, n, (m,), generator=g)
+        j = torch.randint(0, n-1, (m,), generator=g)
+        # ensure i != j by mapping j>=i -> j+1
+        j = j + (j >= i)
+        B = (z[i] - z[j]).abs().mean().item()
+
+    # 3c) C = E|G - G'| = 2 / sqrt(pi)
+    Cconst = 2.0 / math.sqrt(math.pi)
+
+    ED = float((A - B - Cconst).item() if isinstance(A, torch.Tensor) else (A - B - Cconst))
+    return ED
 
 # ---------------------------
 # Objective for Optuna
@@ -209,7 +306,7 @@ def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:in
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
     accs = []
-    max_off_diagonals = []
+    fit_criterias = []
 
     for fold_idx, (tr_idx, va_idx) in enumerate(skf.split(Xp, y)):
         Xtr, Xva = Xp[tr_idx], Xp[va_idx]
@@ -228,14 +325,12 @@ def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:in
 
         if use_cl:
             # record max off-diagonal (absolute optional: uncomment next line to use abs)
-            cl_w = model.cl.weight.detach().cpu()
-            diagonal_mask = torch.eye(cl_w.shape[0], dtype=torch.bool)
-            cl_off = cl_w.masked_fill(diagonal_mask, float('-inf'))
-            max_off_diagonal = cl_off.max().item()
-            max_off_diagonals.append(float(max_off_diagonal))
+            cl_w = model.cl.weight
+            fit_criteria = energy_distance_to_gaussian_from_C(cl_w)
+            fit_criterias.append(float(fit_criteria))
 
-    if use_cl and len(max_off_diagonals) > 0:
-        trial.set_user_attr('avg_max_off_diagonal', float(np.mean(max_off_diagonals)))
+    if use_cl and len(fit_criterias) > 0:
+        trial.set_user_attr('avg_fit_criteria', float(np.mean(fit_criterias)))
     return float(np.mean(accs))
 
 
@@ -281,8 +376,8 @@ def save_best(study: optuna.Study, out_dir: str, dataset_name:str):
 
 def save_trials_cl(study: optuna.Study, out_dir: str, dataset_name: str):
     df = study.trials_dataframe()
-    # include per-trial avg_max_off_diagonal (if present)
-    df = df.assign(avg_max_off_diagonal=[t.user_attrs.get('avg_max_off_diagonal', None) for t in study.trials])
+    # include per-trial avg_fit_criteria (if present)
+    df = df.assign(avg_fit_criteria=[t.user_attrs.get('avg_fit_criteria', None) for t in study.trials])
     csv_path = os.path.join(out_dir, f"{dataset_name}_trials.csv")
     df.to_csv(csv_path, index=False)
     return csv_path
@@ -294,7 +389,7 @@ def save_best_cl(study: optuna.Study, out_dir: str, dataset_name: str):
         json.dump({
             "best_value": study.best_value,
             "best_params": study.best_params,
-            "avg_max_off_diagonal": best_trial.user_attrs.get('avg_max_off_diagonal', None)
+            "avg_fit_criteria": best_trial.user_attrs.get('avg_fit_criteria', None)
         }, f, indent=2)
     return best_json
 
