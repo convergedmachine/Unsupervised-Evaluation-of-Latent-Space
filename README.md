@@ -1,2 +1,2 @@
-# latent-space-dimesionality-of-feed-forward-neural-networks
-latent space dimesionality of feed forward neural networks
+# Unsupervised Evaluation of Representation Quality
+Unsupervised Evaluation of Representation Quality
