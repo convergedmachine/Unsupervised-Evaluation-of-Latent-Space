@@ -1,0 +1,19 @@
+{
+  "best_value": 0.9183064699172974,
+  "best_params": {
+    "iseed": 8,
+    "preproc": "pca",
+    "pca_energy": 0.8701036772705785,
+    "nhid1": 736,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 1.5767524600094933,
+    "lr": 0.12214957270673965,
+    "lr_anneal_start": 8881,
+    "batch_size": 20,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 0.00027226240499236907
+  },
+  "avg_fit_criteria": -0.00015516281127929686
+}

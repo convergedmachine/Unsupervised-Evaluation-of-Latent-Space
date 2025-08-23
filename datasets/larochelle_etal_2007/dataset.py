@@ -191,7 +191,7 @@ class BaseL2007(object):
     """
 
     BASE_URL = 'http://www.iro.umontreal.ca/~lisa/icml2007data'
-    DOWNLOAD_IF_MISSING = True  # value used on first access to .meta
+    DOWNLOAD_IF_MISSING = False  # value used on first access to .meta
     MMAP_MODE = 'r'             # _labels and _inputs are loaded this way.
                                 # See numpy.load / numpy.memmap for semantics.
     TRANSPOSE_IMAGES = False    # Some of the datasets were saved sideways.

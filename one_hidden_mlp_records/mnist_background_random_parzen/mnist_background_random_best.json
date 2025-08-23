@@ -1,0 +1,16 @@
+{
+  "best_value": 0.8993226170539856,
+  "best_params": {
+    "iseed": 6,
+    "preproc": "raw",
+    "nhid1": 416,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "Glorot",
+    "lr": 0.28728624443356787,
+    "lr_anneal_start": 4328,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.00038874149322509766
+}
