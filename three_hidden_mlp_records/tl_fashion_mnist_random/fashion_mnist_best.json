@@ -1,0 +1,23 @@
+{
+  "best_value": 0.8793285608291626,
+  "best_params": {
+    "iseed": 7,
+    "preproc": "colnorm",
+    "colnorm_thresh": 1.5213799637263695e-05,
+    "nhid1": 576,
+    "nhid2": 496,
+    "nhid3": 1008,
+    "squash": "tanh",
+    "dist1": "normal",
+    "scale_heur1": "Glorot",
+    "lr": 0.04064835377827358,
+    "lr_anneal_start": 383,
+    "batch_size": 20,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 0.00010849668078145311
+  },
+  "avg_fit_criteria": 0.012128957112630208,
+  "ed_cl1_mean": 0.011715173721313477,
+  "ed_cl2_mean": 0.012070107460021972,
+  "ed_cl3_mean": 0.012601590156555176
+}

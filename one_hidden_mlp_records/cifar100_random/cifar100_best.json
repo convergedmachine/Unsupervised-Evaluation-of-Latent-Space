@@ -1,0 +1,19 @@
+{
+  "best_value": 0.22481666505336761,
+  "best_params": {
+    "iseed": 6,
+    "preproc": "colnorm",
+    "colnorm_thresh": 1.6514020850636604e-05,
+    "nhid1": 864,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 0.4097929964164301,
+    "lr": 0.029120432139338345,
+    "lr_anneal_start": 8411,
+    "batch_size": 20,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 1.6919226390788936e-06
+  },
+  "avg_fit_criteria": 0.00039534568786621095
+}

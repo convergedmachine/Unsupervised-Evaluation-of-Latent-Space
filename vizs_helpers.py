@@ -18,6 +18,9 @@ DATASETS = [
     'mnist_rotated',    
     'mnist_background_random',
     'mnist_background_images',
+    'fashion_mnist',
+    'cifar10',
+    'cifar100'
 ]
 
 from sklearn.exceptions import ConvergenceWarning
@@ -362,7 +365,7 @@ def plot_ard_panels(
     fig.tight_layout()
     panel_path = os.path.join("ard_2x4_panels.png")
     #fig.savefig(panel_path, dpi=200)
-    plt.show(fig)
+    plt.close(fig)
 
 
 # ------------- helpers -------------
@@ -388,7 +391,7 @@ def plot_accuracy_vs_param_panels(
     acc_col: str = "accuracy",
     param_col: str = "param",
     add_fit_lines: bool = False,
-    figsize: Tuple[int, int] = (20, 5),
+    figsize: Tuple[int, int] = (35, 5),
     save_path: Optional[str] = None
 ):
     """
@@ -399,7 +402,7 @@ def plot_accuracy_vs_param_panels(
     """
     datasets = DATASETS
 
-    fig, axes = plt.subplots(1, 4, figsize=figsize, sharey=False)
+    fig, axes = plt.subplots(1, 7, figsize=figsize, sharey=False)
     axes = axes.flatten()
 
     sampler_specs = [
@@ -434,3 +437,4 @@ def plot_accuracy_vs_param_panels(
     plt.tight_layout()
     if save_path:
         fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.close()

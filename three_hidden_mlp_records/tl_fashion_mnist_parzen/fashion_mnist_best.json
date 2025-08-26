@@ -1,0 +1,23 @@
+{
+  "best_value": 0.896228575706482,
+  "best_params": {
+    "iseed": 8,
+    "preproc": "colnorm",
+    "colnorm_thresh": 1.263126111278571e-05,
+    "nhid1": 752,
+    "nhid2": 368,
+    "nhid3": 480,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 1.7009701198654041,
+    "lr": 0.19395371672993797,
+    "lr_anneal_start": 7065,
+    "batch_size": 100,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.006014664967854817,
+  "ed_cl1_mean": 0.002475404739379883,
+  "ed_cl2_mean": 0.005600690841674805,
+  "ed_cl3_mean": 0.009967899322509766
+}

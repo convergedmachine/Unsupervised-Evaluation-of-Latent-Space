@@ -1,0 +1,23 @@
+{
+  "best_value": 0.8407580971717834,
+  "best_params": {
+    "iseed": 8,
+    "preproc": "pca",
+    "pca_energy": 0.8352865527637298,
+    "nhid1": 624,
+    "nhid2": 688,
+    "nhid3": 128,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "Glorot",
+    "lr": 0.4314617627905468,
+    "lr_anneal_start": 7278,
+    "batch_size": 100,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 4.288303421914083e-06
+  },
+  "avg_fit_criteria": 0.0002899646759033203,
+  "ed_cl1_mean": 1.175403594970703e-05,
+  "ed_cl2_mean": 0.00028853416442871095,
+  "ed_cl3_mean": 0.000569605827331543
+}

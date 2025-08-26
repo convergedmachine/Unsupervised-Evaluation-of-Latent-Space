@@ -1,0 +1,18 @@
+{
+  "best_value": 0.49743332266807555,
+  "best_params": {
+    "iseed": 5,
+    "preproc": "colnorm",
+    "colnorm_thresh": 1.0283303676757852e-07,
+    "nhid1": 560,
+    "squash": "tanh",
+    "dist1": "normal",
+    "scale_heur1": "old",
+    "scale_mult1": 0.2008659361725164,
+    "lr": 0.005933073415521691,
+    "lr_anneal_start": 5089,
+    "batch_size": 100,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.010219430923461914
+}

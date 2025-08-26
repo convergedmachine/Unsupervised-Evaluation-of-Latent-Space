@@ -124,7 +124,7 @@ def train_eval_once(model: nn.Module,
                     Xva: np.ndarray, yva: np.ndarray,
                     device: str,
                     trial: Optional[optuna.trial.Trial],
-                    max_epochs: int = 50,
+                    max_epochs: int = 200,
                     step_base: int = 0) -> float:
     model = model.to(device)
     # --- Hyperparams (NIPS'11 style) ---
@@ -268,7 +268,7 @@ def energy_distance_to_gaussian_from_C(
 # ---------------------------
 # Objective for Optuna
 # ---------------------------
-def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:int=50, use_cl:bool=False, device:str='cpu'):
+def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:int=200, use_cl:bool=False, device:str='cpu'):
     seed = trial.suggest_categorical('iseed', [5,6,7,8])
     set_seed(seed)
     prep = preprocess(trial, X)
@@ -308,25 +308,75 @@ def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:in
     return float(np.mean(accs))
     
 # ---------------------------
-# Dataset loading (from dataset.py) with safe fallback
+# Dataset loading (Larochelle + Torchvision)
 # ---------------------------
-def load_dataset(name:str):
+def load_dataset(name: str, root: str = "data_folder"):
+    """
+    Returns:
+        X (np.ndarray, float32, shape [N, D]), y (np.ndarray, int64, shape [N])
+    Notes:
+      - Torchvision datasets are concatenated (train+test), flattened, and left unnormalized.
+        Your preprocessing pipeline (colnorm / PCA) will handle scaling.
+      - Larochelle datasets use latent_structure_task() and labels from the dataset object.
+    """
+    import numpy as np
+
+    # Larochelle et al. 2007
     from datasets.larochelle_etal_2007.dataset import (
         MNIST_Basic, MNIST_BackgroundImages, MNIST_BackgroundRandom,
         MNIST_Rotated, MNIST_RotatedBackgroundImages,
         Rectangles, RectanglesImages, Convex
     )
-    dmap = {
+    larochelle_map = {
         "mnist_basic": MNIST_Basic,
         "mnist_background_images": MNIST_BackgroundImages,
         "mnist_background_random": MNIST_BackgroundRandom,
         "mnist_rotated": MNIST_Rotated,
+        "mnist_rotated_background_images": MNIST_RotatedBackgroundImages,
+        "rectangles": Rectangles,
         "rectangles_images": RectanglesImages,
+        "convex": Convex,
     }
-    D = dmap[name]()
-    X = D.latent_structure_task()
-    y = D._labels.copy()
-    return X, y
+
+    if name in larochelle_map:
+        D = larochelle_map[name]()
+        X = D.latent_structure_task().astype(np.float32)
+        y = D._labels.copy().astype(np.int64)
+        # Ensure 2D (N, D)
+        if X.ndim > 2:
+            X = X.reshape(X.shape[0], -1)
+        return X, y
+
+    # Torchvision datasets
+    import torchvision
+    import torch
+
+    if name == "cifar10":
+        trainset = torchvision.datasets.CIFAR10(root=root, train=True, download=True)
+        testset  = torchvision.datasets.CIFAR10(root=root, train=False, download=True)
+        X = np.concatenate([trainset.data, testset.data], axis=0)            # (N, 32, 32, 3), uint8
+        y = np.array(trainset.targets + testset.targets, dtype=np.int64)
+        X = X.reshape(X.shape[0], -1).astype(np.float32)                      # (N, 3072)
+        return X, y
+
+    if name == "cifar100":
+        trainset = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
+        testset  = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+        X = np.concatenate([trainset.data, testset.data], axis=0)            # (N, 32, 32, 3), uint8
+        y = np.array(trainset.targets + testset.targets, dtype=np.int64)
+        X = X.reshape(X.shape[0], -1).astype(np.float32)                      # (N, 3072)
+        return X, y
+
+    if name == "fashion_mnist":
+        trainset = torchvision.datasets.FashionMNIST(root=root, train=True, download=True)
+        testset  = torchvision.datasets.FashionMNIST(root=root, train=False, download=True)
+        # .data is a torch.Tensor (N, 28, 28), uint8
+        X = np.concatenate([trainset.data.numpy(), testset.data.numpy()], axis=0)
+        y = np.concatenate([trainset.targets.numpy(), testset.targets.numpy()], axis=0).astype(np.int64)
+        X = X.reshape(X.shape[0], -1).astype(np.float32)                      # (N, 784)
+        return X, y
+
+    raise ValueError(f"Unknown dataset: {name}")
     
 # ---------------------------
 # Reporting helpers
@@ -367,18 +417,35 @@ def save_best_cl(study: optuna.Study, out_dir: str, dataset_name: str):
 # ---------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", type=str, default="rectangles_images",
-                    choices=["mnist_basic","mnist_background_images","mnist_background_random",
-                             "mnist_rotated","rectangles_images"])
+    ap.add_argument(
+        "--dataset",
+        type=str,
+        default="rectangles_images",
+        choices=[
+            # Larochelle
+            "mnist_basic",
+            "mnist_background_images",
+            "mnist_background_random",
+            "mnist_rotated",
+            "mnist_rotated_background_images",
+            "rectangles",
+            "rectangles_images",
+            "convex",
+            # Torchvision
+            "fashion_mnist",
+            "cifar10",
+            "cifar100",
+        ],
+    )
     ap.add_argument("--optimization", type=str, default="random",
                     choices=["random", "parzen"],)
-    ap.add_argument("--trials", type=int, default=80)
+    ap.add_argument("--trials", type=int, default=128)
     ap.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--out", type=str, default="runs/experiment")
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--cv", type=int, default=3, help="Stratified K-folds")
+    ap.add_argument("--cv", type=int, default=5, help="Stratified K-folds")
     ap.add_argument("--cl", action='store_true', help="Use CL model (default: False)")
-    ap.add_argument("--epochs", type=int, default=50)
+    ap.add_argument("--epochs", type=int, default=200)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     set_seed(args.seed)

@@ -1,2 +1,2 @@
-#Unsupervised Evaluation of Latent Space through Off-Diagonal Coupling Noise
-
+# Unsupervised Evaluation of Representation Quality
+Unsupervised Evaluation of Representation Quality
