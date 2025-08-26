@@ -323,7 +323,7 @@ def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:in
         trial.set_user_attr('ed_cl2_mean', float(np.mean(ed_c2_list)))
         trial.set_user_attr('ed_cl3_mean', float(np.mean(ed_c3_list)))
 
-    return float(np.mean(accs))
+    return avg_ed
 
 # ---------------------------
 # Dataset loading (Larochelle + Torchvision)
@@ -487,7 +487,7 @@ def main():
     else:
         raise ValueError(f"Unknown optimization: {args.optimization}")
 
-    study = optuna.create_study(direction='maximize', sampler=sampler)
+    study = optuna.create_study(direction='minimize', sampler=sampler)
     study.optimize(
         lambda t: objective(t, X, y, n_splits=args.cv, max_epochs=args.epochs, use_cl=args.cl, device=args.device),
         n_trials=args.trials
