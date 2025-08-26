@@ -1,4 +1,3 @@
-````markdown
 # Representation Learning Experiments
 
 This repository contains training and evaluation pipelines for **Autoencoders (AE)** and **Multi-Layer Perceptrons (MLPs)** with up to three hidden layers, alongside tools for visualization and analysis.  
@@ -123,10 +122,3 @@ This codebase underpins experiments on **unsupervised evaluation of representati
 
 MIT License.
 See `LICENSE` for details.
-
-```
-
----
-
-Would you like me to also add **example figures** (like mock plots/screenshots placeholders in the README) so it’s ready for GitHub presentation, or should I keep it purely text-based?
-```
