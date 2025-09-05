@@ -1,0 +1,27 @@
+{
+  "best_value": 0.10934791962305705,
+  "best_params": {
+    "iseed": 8,
+    "nhid1": 832,
+    "nhid2": 928,
+    "nhid3": 944,
+    "ncode": 752,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "Glorot",
+    "lr": 0.21665662027529997,
+    "lr_anneal_start": 9976,
+    "batch_size": 100,
+    "l2_penalty_choice": "zero"
+  },
+  "val_recon_loss_mean": 0.10934791962305705,
+  "val_recon_loss_std": 0.0016448469039238099,
+  "ed_overall_mean": 0.009464780489603678,
+  "ed_cl1_mean": 0.008959571520487467,
+  "ed_cl2_mean": 0.010743260383605957,
+  "ed_cl3_mean": 0.011367599169413248,
+  "ed_cl4_mean": 0.011697491010030111,
+  "ed_cl5_mean": 0.010227640469868978,
+  "ed_cl6_mean": 0.009275476137797037,
+  "ed_cl7_mean": 0.003982424736022949
+}

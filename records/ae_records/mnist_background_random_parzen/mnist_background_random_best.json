@@ -1,0 +1,28 @@
+{
+  "best_value": 0.44327305754025775,
+  "best_params": {
+    "iseed": 6,
+    "nhid1": 1008,
+    "nhid2": 912,
+    "nhid3": 1024,
+    "ncode": 896,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 0.5995019556678722,
+    "lr": 0.9193914099787127,
+    "lr_anneal_start": 8124,
+    "batch_size": 100,
+    "l2_penalty_choice": "zero"
+  },
+  "val_recon_loss_mean": 0.44327305754025775,
+  "val_recon_loss_std": 0.0012716781282037792,
+  "ed_overall_mean": 0.008207622028532483,
+  "ed_cl1_mean": 0.008645256360371908,
+  "ed_cl2_mean": 0.008766770362854004,
+  "ed_cl3_mean": 0.009754300117492676,
+  "ed_cl4_mean": 0.010695417722066244,
+  "ed_cl5_mean": 0.008825580279032389,
+  "ed_cl6_mean": 0.007718125979105632,
+  "ed_cl7_mean": 0.003047903378804525
+}

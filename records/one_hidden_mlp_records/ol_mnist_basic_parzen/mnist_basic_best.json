@@ -1,0 +1,16 @@
+{
+  "best_value": 0.9800322771072387,
+  "best_params": {
+    "iseed": 5,
+    "nhid1": 656,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 0.6640990526049928,
+    "lr": 0.1691330714234881,
+    "lr_anneal_start": 9084,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.0005267143249511718
+}

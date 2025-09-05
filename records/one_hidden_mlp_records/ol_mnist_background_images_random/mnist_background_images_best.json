@@ -1,0 +1,16 @@
+{
+  "best_value": 0.825677466392517,
+  "best_params": {
+    "iseed": 6,
+    "nhid1": 240,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 1.988181682835439,
+    "lr": 0.10467739650491467,
+    "lr_anneal_start": 8879,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.00012202262878417969
+}

@@ -1,0 +1,16 @@
+{
+  "best_value": 0.9294032454490662,
+  "best_params": {
+    "iseed": 6,
+    "nhid1": 912,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "Glorot",
+    "lr": 0.14338527448998015,
+    "lr_anneal_start": 9648,
+    "batch_size": 20,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 1.8562994178944103e-07
+  },
+  "avg_fit_criteria": 4.177093505859375e-05
+}

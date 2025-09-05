@@ -1,0 +1,16 @@
+{
+  "best_value": 0.5198166608810425,
+  "best_params": {
+    "iseed": 7,
+    "nhid1": 704,
+    "squash": "logistic",
+    "dist1": "uniform",
+    "scale_heur1": "Glorot",
+    "lr": 0.2811412807031924,
+    "lr_anneal_start": 7554,
+    "batch_size": 100,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 9.610575880809985e-08
+  },
+  "avg_fit_criteria": 0.00029702186584472655
+}

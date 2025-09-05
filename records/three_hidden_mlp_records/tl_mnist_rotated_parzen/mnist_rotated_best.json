@@ -1,0 +1,20 @@
+{
+  "best_value": 0.9344354867935181,
+  "best_params": {
+    "iseed": 6,
+    "nhid1": 480,
+    "nhid2": 1008,
+    "nhid3": 240,
+    "squash": "tanh",
+    "dist1": "normal",
+    "scale_heur1": "Glorot",
+    "lr": 0.08708522165330171,
+    "lr_anneal_start": 9526,
+    "batch_size": 20,
+    "l2_penalty_choice": "zero"
+  },
+  "avg_fit_criteria": 0.0013802448908487956,
+  "ed_cl1_mean": 0.00035842259724934894,
+  "ed_cl2_mean": 0.002477288246154785,
+  "ed_cl3_mean": 0.0013050238291422527
+}

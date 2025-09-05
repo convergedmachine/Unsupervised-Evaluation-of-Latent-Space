@@ -1,0 +1,17 @@
+{
+  "best_value": 0.8352097153663636,
+  "best_params": {
+    "iseed": 5,
+    "nhid1": 416,
+    "squash": "tanh",
+    "dist1": "uniform",
+    "scale_heur1": "old",
+    "scale_mult1": 1.0967792203531206,
+    "lr": 0.16783770027496783,
+    "lr_anneal_start": 5389,
+    "batch_size": 20,
+    "l2_penalty_choice": "nz",
+    "l2_penalty_nz": 1.513235151553473e-07
+  },
+  "avg_fit_criteria": 8.213520050048828e-05
+}
