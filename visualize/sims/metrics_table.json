@@ -1,0 +1,42 @@
+{
+  "Gaussian": {
+    "EnergyDistance": -0.0002708246,
+    "MMD_RBF": 0.0,
+    "Mardia_skew2": 0.0001285797,
+    "Mardia_excess2": 0.008452968,
+    "Mardia_combined": 0.0085815476,
+    "Wasserstein2": 0.036420717
+  },
+  "t(df=3)": {
+    "EnergyDistance": 0.0075587374,
+    "MMD_RBF": 0.0058701188,
+    "Mardia_skew2": 33.762499095,
+    "Mardia_excess2": 269141.2368346492,
+    "Mardia_combined": 269174.9993337442,
+    "Wasserstein2": 2.0591071405
+  },
+  "Laplace(var=1)": {
+    "EnergyDistance": 0.011870033,
+    "MMD_RBF": 0.0,
+    "Mardia_skew2": 3.19956e-05,
+    "Mardia_excess2": 11.5520018753,
+    "Mardia_combined": 11.5520338709,
+    "Wasserstein2": 0.4960148
+  },
+  "Gaussian Mixture": {
+    "EnergyDistance": 0.0245552531,
+    "MMD_RBF": 0.0188047261,
+    "Mardia_skew2": 0.0034967248,
+    "Mardia_excess2": 1.7273557402,
+    "Mardia_combined": 1.730852465,
+    "Wasserstein2": 0.320028807
+  },
+  "Skewed (Exp-1)": {
+    "EnergyDistance": 0.0777332104,
+    "MMD_RBF": 0.0089699134,
+    "Mardia_skew2": 3.7079710463,
+    "Mardia_excess2": 23.5484473331,
+    "Mardia_combined": 27.2564183794,
+    "Wasserstein2": 0.8356320517
+  }
+}
