@@ -1,8 +1,0 @@
-{
-  "n": 2000,
-  "standardize": "robust",
-  "seed": 12345,
-  "outdir": "sims",
-  "mmd_z_mc": 4096,
-  "mmd_kxx_subsample": 600
-}
