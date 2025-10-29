@@ -168,16 +168,26 @@ def train_eval_once(model: nn.Module,
 # -----------------------------
 # Core utilities
 # -----------------------------
+# -------------------------------------------------------------------------
+# Standard Normal Density and CDF
+# -------------------------------------------------------------------------
 @torch.no_grad()
 def _phi(x: torch.Tensor) -> torch.Tensor:
+    """Standard normal PDF."""
     return torch.exp(-0.5 * x**2) / math.sqrt(2 * math.pi)
 
 @torch.no_grad()
 def _Phi(x: torch.Tensor) -> torch.Tensor:
+    """Standard normal CDF."""
     return 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
 
+
+# -------------------------------------------------------------------------
+# Standardization Utilities
+# -------------------------------------------------------------------------
 @torch.no_grad()
 def robust_standardize(x: torch.Tensor) -> torch.Tensor:
+    """Robust standardization using median and MAD."""
     x = x.to(torch.float32)
     med = x.median()
     mad = (x - med).abs().median().clamp(min=1e-12)
@@ -185,33 +195,58 @@ def robust_standardize(x: torch.Tensor) -> torch.Tensor:
 
 @torch.no_grad()
 def meanstd_standardize(x: torch.Tensor) -> torch.Tensor:
+    """Standardize using mean and standard deviation."""
     x = x.to(torch.float32)
     mu = x.mean()
     sd = x.std(unbiased=True).clamp(min=1e-12)
     return (x - mu) / sd
 
+
+# -------------------------------------------------------------------------
+# Off-diagonal Extraction
+# -------------------------------------------------------------------------
 @torch.no_grad()
-def offdiag_values(C: torch.Tensor, mode: str = "all") -> torch.Tensor:
+def offdiag_values(C: torch.Tensor, mode: str = "all", zero_mean: bool = True) -> torch.Tensor:
+    """
+    Extract the off-diagonal elements from a square coupling matrix.
+
+    Args:
+        C (torch.Tensor): square matrix [n, n]
+        mode (str): 'upper' (only upper triangle) or 'all'
+        zero_mean (bool): subtract mean of off-diagonals (default=True)
+    """
     n = C.shape[0]
     if mode == "upper":
         iu = torch.triu_indices(n, n, offset=1, device=C.device)
-        return C[iu[0], iu[1]].to(torch.float32)
+        vals = C[iu[0], iu[1]].to(torch.float32)
     elif mode == "all":
         mask = ~torch.eye(n, dtype=torch.bool, device=C.device)
-        return C[mask].flatten().to(torch.float32)
+        vals = C[mask].flatten().to(torch.float32)
     else:
         raise ValueError("mode must be 'upper' or 'all'")
 
+    if zero_mean:
+        vals = vals - vals.mean()
+
+    return vals
+
+
+# -------------------------------------------------------------------------
+# Energy Distance Components
+# -------------------------------------------------------------------------
 @torch.no_grad()
 def expected_abs_diff_standard_norm() -> float:
+    """E|Z - Z'| for Z,Z' ~ N(0,1)."""
     return 2.0 / math.sqrt(math.pi)
 
 @torch.no_grad()
 def E_abs_x_minus_Z(x: torch.Tensor) -> torch.Tensor:
+    """E|x - Z| where Z ~ N(0,1), computed elementwise."""
     return 2.0 * _phi(x) + x * (2.0 * _Phi(x) - 1.0)
 
 @torch.no_grad()
 def pairwise_abs_mean_u_stat(x: torch.Tensor) -> torch.Tensor:
+    """Unbiased U-statistic for E|x - x'|."""
     m = x.numel()
     if m < 2:
         return torch.tensor(float("nan"), dtype=torch.float32)
@@ -222,8 +257,13 @@ def pairwise_abs_mean_u_stat(x: torch.Tensor) -> torch.Tensor:
     mean_pair_abs = (2.0 * s) / (m * (m - 1))
     return mean_pair_abs
 
+
+# -------------------------------------------------------------------------
+# Energy Distance to N(0,1)
+# -------------------------------------------------------------------------
 @torch.no_grad()
 def energy_distance_to_standard_normal(x: torch.Tensor, standardize: str = "robust") -> float:
+    """Compute energy distance between empirical x and standard normal."""
     if standardize == "robust":
         xs = robust_standardize(x)
     elif standardize == "meanstd":
@@ -239,6 +279,31 @@ def energy_distance_to_standard_normal(x: torch.Tensor, standardize: str = "robu
     term_zz = expected_abs_diff_standard_norm()
     D = 2.0 * term_xz - term_xx - term_zz
     return float(D.item())
+
+
+# -------------------------------------------------------------------------
+# Main Evaluation: Coupling-Matrix Energy Distance
+# -------------------------------------------------------------------------
+@torch.no_grad()
+def coupling_matrix_energy_distance(C: torch.Tensor, n_samples: int, mode: str = "upper") -> float:
+    """
+    Compute energy distance of Fisher-transformed off-diagonal couplings to N(0,1).
+
+    Args:
+        C (torch.Tensor): correlation or coupling matrix [d, d]
+        n_samples (int): number of observations used to estimate C
+        mode (str): 'upper' or 'all' off-diagonal extraction
+    """
+    # 1. Extract off-diagonal correlations
+    r = offdiag_values(C, mode=mode, zero_mean=False)
+
+    # 2. Fisher z-transform (stabilized correlation variance)
+    z = torch.sqrt(torch.tensor(float(n_samples - 3))) * torch.atanh(r)
+
+    # 3. Compare to N(0,1) via energy distance
+    D = energy_distance_to_standard_normal(z, standardize="robust")
+
+    return D
     
 # ---------------------------
 # Objective for Optuna
@@ -295,12 +360,12 @@ def objective(trial, X: np.ndarray, y: np.ndarray, n_splits:int=3, max_epochs:in
         accs.append(acc)
 
         if use_cl:
-            ed1 = energy_distance_to_standard_normal(model.cl1.weight)
-            ed2 = energy_distance_to_standard_normal(model.cl2.weight)
-            ed3 = energy_distance_to_standard_normal(model.cl3.weight)
-            ed_c1_list.append(float(ed1))
-            ed_c2_list.append(float(ed2))
-            ed_c3_list.append(float(ed3))
+            ed1 = coupling_matrix_energy_distance(model.cl1.weight, n_samples=Xva.shape[0], mode='all')
+            ed2 = coupling_matrix_energy_distance(model.cl2.weight, n_samples=Xva.shape[0], mode='all')
+            ed3 = coupling_matrix_energy_distance(model.cl3.weight, n_samples=Xva.shape[0], mode='all')
+            ed_c1_list.append(ed1)
+            ed_c2_list.append(ed2)
+            ed_c3_list.append(ed3)
 
     if use_cl and len(ed_c1_list) > 0:
         avg_ed = float(np.mean([np.mean(ed_c1_list), np.mean(ed_c2_list), np.mean(ed_c3_list)]))
